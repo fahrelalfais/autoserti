@@ -1239,6 +1239,13 @@
             }
         });
         
+        // Fungsi untuk sanitasi nama file
+        function sanitizeFilename(name) {
+            return name.replace(/[^a-zA-Z0-9_\u00C0-\u024F\s]/g, '') // Hapus karakter khusus
+                       .replace(/\s+/g, '_') // Ganti spasi dengan underscore
+                       .substring(0, 100); // Batasi panjang nama file
+        }
+        
         // Generate All
         document.getElementById('generate-btn').addEventListener('click', async () => {
             if (!dataTable.length || !templateImage) {
@@ -1277,7 +1284,7 @@
                     // Gambar template
                     doc.addImage(templateImage, 'PNG', 0, 0, templateImg.width, templateImg.height);
                     
-                    // Tambahkan teks
+                    // Tambahkan teks dengan perataan yang benar
                     placeholders.forEach(ph => {
                         const value = dataTable[i][ph.name] || '';
                         doc.setFont(ph.fontFamily);
@@ -1291,19 +1298,25 @@
                         
                         doc.setTextColor(r, g, b);
                         
-                        // Perataan teks
-                        if (ph.textAlign === 'center') {
-                            doc.text(value, templateImg.width / 2, ph.y, { align: 'center' });
-                        } else if (ph.textAlign === 'right') {
-                            doc.text(value, templateImg.width - ph.x, ph.y, { align: 'right' });
-                        } else {
-                            doc.text(value, ph.x, ph.y);
-                        }
+                        // Opsi perataan teks
+                        const options = {
+                            align: ph.textAlign
+                        };
+                        
+                        // Gunakan posisi yang sama dengan preview
+                        doc.text(value, ph.x, ph.y, options);
                     });
+                    
+                    // Tentukan nama file berdasarkan placeholder pertama
+                    const firstPlaceholder = placeholders[0];
+                    let fileName = `sertifikat_${i+1}`;
+                    if (firstPlaceholder && dataTable[i][firstPlaceholder.name]) {
+                        fileName = `Sertifikat_${sanitizeFilename(dataTable[i][firstPlaceholder.name])}`;
+                    }
                     
                     // Simpan PDF ke ZIP
                     const pdfData = doc.output('blob');
-                    zip.file(`sertifikat_${i+1}.pdf`, pdfData);
+                    zip.file(`${fileName}.pdf`, pdfData);
                     
                     // Berikan jeda agar UI tetap responsif
                     await new Promise(resolve => setTimeout(resolve, 50));
