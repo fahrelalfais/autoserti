@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Sertifikat Automatis Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 10px;
+            --box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        header h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        header p {
+            color: var(--gray);
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: var(--transition);
+            display: none;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        .card-header {
+            padding: 18px 25px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .card-header i {
+            margin-right: 12px;
+            font-size: 1.4rem;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            overflow: auto;
+            background: #f8fafc;
+            box-shadow: var(--box-shadow);
+            max-height: 70vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #template-canvas {
+            border: 1px solid var(--light-gray);
+            background: white;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+        }
+
+        .placeholder-marker {
+            position: absolute;
+            background: rgba(67, 97, 238, 0.2);
+            border: 2px dashed var(--primary);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary);
+            white-space: nowrap;
+            cursor: move;
+            user-select: none;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            border: 1px solid var(--light-gray);
+            padding: 14px 16px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(248, 249, 250, 0.5);
+        }
+
+        tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        input, button, select, textarea {
+            padding: 12px 16px;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+        }
+
+        button i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+
+        button.secondary {
+            background: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background: #65119e;
+            box-shadow: 0 4px 10px rgba(114, 9, 183, 0.3);
+        }
+
+        button.success {
+            background: var(--success);
+        }
+
+        button.success:hover {
+            background: #05c191;
+            box-shadow: 0 4px 10px rgba(6, 214, 160, 0.3);
+        }
+
+        button.warning {
+            background: var(--warning);
+            color: var(--dark);
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn-group button {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 1.05rem;
+        }
+
+        .text-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+            padding: 20px;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary);
+        }
+
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid var(--light-gray);
+            cursor: pointer;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #preview-area {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        #preview-area img {
+            max-width: 90%;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            border: 1px solid var(--light-gray);
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            margin: 25px 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(67, 97, 238, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 18px;
+            border-radius: var(--border-radius);
+            margin: 18px 0;
+            display: flex;
+            align-items: center;
+            font-size: 1.05rem;
+        }
+
+        .alert-info {
+            background: rgba(67, 97, 238, 0.1);
+            border-left: 4px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .alert i {
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+
+        .font-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .font-option {
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .font-option:hover {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .font-option.selected {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            font-weight: bold;
+        }
+
+        .placeholder-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            background: var(--light);
+        }
+
+        .placeholder-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            padding: 18px;
+            margin: 12px 0;
+            background: white;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .placeholder-item > div {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .placeholder-item input, .placeholder-item select {
+            width: 100%;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button {
+            padding: 10px 15px;
+        }
+
+        .text-format-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .text-format-buttons button {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .status-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            background: var(--light);
+            color: var(--dark);
+            border: 1px solid var(--light-gray);
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .tab-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .text-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .font-selector {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .btn-group button {
+                flex: 1 0 100%;
+            }
+            
+            .placeholder-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .placeholder-item > div {
+                width: 100%;
+            }
+            
+            .card-header {
+                font-size: 1.1rem;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .tab-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-certificate"></i> Generator Sertifikat Automatis Pro</h1>
+            <p>Solusi lengkap untuk membuat sertifikat secara massal dengan fleksibilitas tinggi dan performa optimal</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="template"><i class="fas fa-image"></i> Template Gambar</button>
+            <button class="tab-btn" data-tab="elements"><i class="fas fa-sliders-h"></i> Pengaturan Elemen</button>
+            <button class="tab-btn" data-tab="data"><i class="fas fa-table"></i> Data Penerima</button>
+            <button class="tab-btn" data-tab="generate"><i class="fas fa-tools"></i> Generate & Ekspor</button>
+        </div>
+        
+        <!-- Tab 1: Template Gambar -->
+        <div class="card active" id="template-card">
+            <div class="card-header">
+                <i class="fas fa-image"></i> Template Gambar
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Upload gambar background sertifikat (format PNG/JPG)
+                </div>
+                
+                <div class="btn-group">
+                    <input type="file" id="template-upload" accept="image/*" style="display: none;">
+                    <button id="upload-template-btn" class="secondary">
+                        <i class="fas fa-upload"></i> Pilih Template
+                    </button>
+                    <button id="reset-canvas-btn" class="danger">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                
+                <div class="canvas-container" id="canvas-container">
+                    <canvas id="template-canvas" width="1000" height="700"></canvas>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-mouse-pointer"></i> Placeholder dapat diatur pada tab Pengaturan Elemen
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Pengaturan Elemen -->
+        <div class="card" id="elements-card">
+            <div class="card-header">
+                <i class="fas fa-sliders-h"></i> Pengaturan Elemen
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Tambah dan atur placeholder untuk teks sertifikat
+                </div>
+                
+                <button id="add-placeholder" class="secondary">
+                    <i class="fas fa-plus"></i> Tambah Placeholder
+                </button>
+                
+                <div class="placeholder-list" id="placeholders-list">
+                    <p class="alert alert-info" style="margin: 15px 0;">
+                        <i class="fas fa-info-circle"></i> Belum ada placeholder. Klik "Tambah Placeholder" untuk menambahkan.
+                    </p>
+                </div>
+                
+                <div class="text-controls" id="text-controls">
+                    <div class="text-control">
+                        <label>Konten Teks</label>
+                        <input type="text" id="text-content" placeholder="Masukkan teks...">
+                    </div>
+                    
+                    <div class="text-control">
+                        <label>Ukuran Font</label>
+                        <input type="range" id="font-size" min="8" max="120" value="30">
+                        <span id="font-size-value">30px</span>
+                    </div>
+                    
+                    <div class="text-control">
+                        <label>Warna Teks</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="text-color" value="#000000">
+                            <div class="color-preview" id="text-color-preview" style="background-color: #000000;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-control">
+                        <label>Jenis Font</label>
+                        <select id="font-family">
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Impact">Impact</option>
+                            <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                        
+                        <div class="font-selector">
+                            <div class="font-option" data-font="Arial">Arial</div>
+                            <div class="font-option" data-font="Times New Roman">Times</div>
+                            <div class="font-option" data-font="Courier New">Courier</div>
+                            <div class="font-option" data-font="Georgia">Georgia</div>
+                            <div class="font-option" data-font="Verdana">Verdana</div>
+                            <div class="font-option" data-font="Impact">Impact</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-control">
+                        <label>Gaya Teks</label>
+                        <div class="text-format-buttons">
+                            <button id="bold-btn" class="secondary"><i class="fas fa-bold"></i></button>
+                            <button id="italic-btn" class="secondary"><i class="fas fa-italic"></i></button>
+                            <button id="underline-btn" class="secondary"><i class="fas fa-underline"></i></button>
+                        </div>
+                        
+                        <div style="margin-top: 15px;">
+                            <label>Perataan</label>
+                            <div class="text-format-buttons">
+                                <button id="align-left-btn" class="secondary"><i class="fas fa-align-left"></i></button>
+                                <button id="align-center-btn" class="secondary"><i class="fas fa-align-center"></i></button>
+                                <button id="align-right-btn" class="secondary"><i class="fas fa-align-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-control">
+                        <label>Rotasi</label>
+                        <input type="range" id="text-rotation" min="0" max="360" value="0">
+                        <span id="rotation-value">0°</span>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="save-config" class="success">
+                        <i class="fas fa-save"></i> Simpan Template
+                    </button>
+                    <button id="load-config">
+                        <i class="fas fa-folder-open"></i> Muat Template
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Data Penerima -->
+        <div class="card" id="data-card">
+            <div class="card-header">
+                <i class="fas fa-table"></i> Data Penerima
+            </div>
+            <div class="card-body">
+                <div class="btn-group">
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+                    <button id="import-csv">
+                        <i class="fas fa-file-import"></i> Import Excel
+                    </button>
+                    <button id="export-csv">
+                        <i class="fas fa-file-export"></i> Export Excel
+                    </button>
+                    <button id="add-row" class="success">
+                        <i class="fas fa-plus"></i> Tambah Penerima
+                    </button>
+                </div>
+                
+                <div style="overflow-x: auto; margin-top: 20px;">
+                    <table id="data-table">
+                        <thead><tr></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 4: Generate & Ekspor -->
+        <div class="card" id="generate-card">
+            <div class="card-header">
+                <i class="fas fa-tools"></i> Generate & Ekspor
+            </div>
+            <div class="card-body">
+                <div class="btn-group">
+                    <button id="preview-btn">
+                        <i class="fas fa-eye"></i> Preview Sertifikat
+                    </button>
+                    <button id="generate-btn" class="success">
+                        <i class="fas fa-file-archive"></i> Generate Semua (ZIP)
+                    </button>
+                </div>
+                
+                <div id="loading">
+                    <div class="spinner"></div>
+                    <p>Sedang memproses sertifikat, harap tunggu...</p>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <div class="status-text" id="status-text">Memulai proses...</div>
+                </div>
+                
+                <div id="preview-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inisialisasi variabel
+        let templateImage = null;
+        let placeholders = [];
+        let dataTable = [];
+        let selectedElement = null;
+        let isDragging = false;
+        let dragElement = null;
+        let startX, startY;
+        
+        // Elemen canvas
+        const canvas = document.getElementById('template-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        
+        // Fungsi untuk menggambar canvas
+        function drawCanvas() {
+            if (!templateImage) return;
+            
+            const img = new Image();
+            img.src = templateImage;
+            img.onload = () => {
+                // Atur ukuran canvas sesuai gambar
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // Gambar template
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Gambar placeholder marker
+                renderPlaceholdersOnCanvas();
+            };
+        }
+        
+        // Fungsi untuk menampilkan placeholder di canvas
+        function renderPlaceholdersOnCanvas() {
+            // Hapus marker sebelumnya
+            document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
+            
+            placeholders.forEach((ph, index) => {
+                const marker = document.createElement('div');
+                marker.className = 'placeholder-marker';
+                marker.textContent = `{${ph.name}}`;
+                marker.style.left = `${ph.x}px`;
+                marker.style.top = `${ph.y}px`;
+                marker.style.fontSize = `${ph.fontSize}px`;
+                marker.style.color = ph.color;
+                marker.style.borderColor = ph.color;
+                marker.style.backgroundColor = `${ph.color}15`;
+                marker.dataset.index = index;
+                
+                // Tambahkan event untuk drag placeholder
+                marker.addEventListener('mousedown', startDrag);
+                
+                container.appendChild(marker);
+            });
+        }
+        
+        // Fungsi untuk memulai drag placeholder
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            dragElement = parseInt(e.target.dataset.index);
+            
+            const marker = e.target;
+            const rect = marker.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Perhitungkan posisi relatif terhadap container
+            startX = e.clientX - rect.left + container.scrollLeft;
+            startY = e.clientY - rect.top + container.scrollTop;
+            
+            marker.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        // Fungsi untuk menggerakkan placeholder
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const marker = placeholders[dragElement];
+            const containerRect = container.getBoundingClientRect();
+            
+            // Hitung posisi baru dengan memperhitungkan scroll container
+            const newX = e.clientX - containerRect.left + container.scrollLeft;
+            const newY = e.clientY - containerRect.top + container.scrollTop;
+            
+            // Update posisi marker
+            marker.x = Math.max(0, Math.min(canvas.width, newX));
+            marker.y = Math.max(0, Math.min(canvas.height, newY));
+            
+            const markerElement = document.querySelector(`.placeholder-marker[data-index="${dragElement}"]`);
+            if (markerElement) {
+                markerElement.style.left = `${marker.x}px`;
+                markerElement.style.top = `${marker.y}px`;
+            }
+        }
+        
+        // Fungsi untuk menghentikan drag
+        function stopDrag() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            if (dragElement !== null) {
+                const markerElement = document.querySelector(`.placeholder-marker[data-index="${dragElement}"]`);
+                if (markerElement) markerElement.style.cursor = 'move';
+            }
+            dragElement = null;
+            
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            
+            // Render ulang daftar placeholder untuk update posisi
+            renderPlaceholders();
+        }
+        
+        // Add placeholder
+        document.getElementById('add-placeholder').addEventListener('click', () => {
+            const name = prompt('Nama placeholder (e.g., NAMA):');
+            if (!name) return;
+            
+            // Tambahkan placeholder di tengah canvas
+            const x = canvas.width ? canvas.width / 2 : 500;
+            const y = canvas.height ? canvas.height / 2 : 350;
+            
+            addPlaceholder(name, x, y, 30, '#000000');
+        });
+        
+        function addPlaceholder(name, x, y, fontSize, color) {
+            placeholders.push({
+                name,
+                x,
+                y,
+                fontSize,
+                color,
+                fontFamily: 'Arial',
+                bold: false,
+                italic: false,
+                underline: false,
+                textAlign: 'center',
+                rotation: 0
+            });
+            renderPlaceholders();
+            updateTableHeaders();
+            renderPlaceholdersOnCanvas();
+        }
+        
+        // Render daftar placeholder
+        function renderPlaceholders() {
+            const list = document.getElementById('placeholders-list');
+            list.innerHTML = '';
+            
+            if (placeholders.length === 0) {
+                list.innerHTML = '<p class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada placeholder. Klik "Tambah Placeholder" untuk menambahkan.</p>';
+                return;
+            }
+            
+            placeholders.forEach((ph, i) => {
+                const div = document.createElement('div');
+                div.className = 'placeholder-item';
+                div.innerHTML = `
+                    <div>
+                        <label>Nama Placeholder</label>
+                        <input value="${ph.name}" onchange="placeholders[${i}].name=this.value; updateTableHeaders(); renderPlaceholdersOnCanvas();">
+                    </div>
+                    <div>
+                        <label>Posisi X</label>
+                        <input type="number" value="${ph.x}" onchange="placeholders[${i}].x=parseInt(this.value); renderPlaceholdersOnCanvas();">
+                    </div>
+                    <div>
+                        <label>Posisi Y</label>
+                        <input type="number" value="${ph.y}" onchange="placeholders[${i}].y=parseInt(this.value); renderPlaceholdersOnCanvas();">
+                    </div>
+                    <div>
+                        <label>Ukuran Font</label>
+                        <input type="number" value="${ph.fontSize}" onchange="placeholders[${i}].fontSize=parseInt(this.value); renderPlaceholdersOnCanvas();">
+                    </div>
+                    <div>
+                        <label>Warna</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="color" value="${ph.color}" onchange="placeholders[${i}].color=this.value; renderPlaceholdersOnCanvas();">
+                            <div class="color-preview" style="background-color: ${ph.color}"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <button onclick="placeholders.splice(${i},1); renderPlaceholders(); updateTableHeaders(); renderPlaceholdersOnCanvas();" class="danger">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+        
+        // Table management
+        function updateTableHeaders() {
+            const thead = document.querySelector('#data-table thead tr');
+            thead.innerHTML = placeholders.map(ph => `<th>${ph.name}</th>`).join('') + '<th>Aksi</th>';
+            renderTableBody();
+        }
+        
+        function renderTableBody() {
+            const tbody = document.querySelector('#data-table tbody');
+            tbody.innerHTML = '';
+            
+            if (dataTable.length === 0) {
+                dataTable.push({});
+            }
+            
+            dataTable.forEach((row, rowIdx) => {
+                const tr = document.createElement('tr');
+                placeholders.forEach(ph => {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.value = row[ph.name] || '';
+                    input.placeholder = `Masukkan ${ph.name}`;
+                    input.onchange = () => row[ph.name] = input.value;
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+                
+                // Tambahkan tombol hapus
+                const tdAction = document.createElement('td');
+                const btnDelete = document.createElement('button');
+                btnDelete.innerHTML = '<i class="fas fa-trash"></i>';
+                btnDelete.className = 'danger';
+                btnDelete.onclick = () => {
+                    dataTable.splice(rowIdx, 1);
+                    renderTableBody();
+                };
+                tdAction.appendChild(btnDelete);
+                tr.appendChild(tdAction);
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // Setup text control events
+        document.getElementById('font-size').addEventListener('input', function() {
+            if (!selectedElement) return;
+            selectedElement.fontSize = parseInt(this.value);
+            document.getElementById('font-size-value').textContent = `${this.value}px`;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        document.getElementById('text-color').addEventListener('input', function() {
+            if (!selectedElement) return;
+            selectedElement.color = this.value;
+            document.getElementById('text-color-preview').style.backgroundColor = this.value;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        document.getElementById('font-family').addEventListener('change', function() {
+            if (!selectedElement) return;
+            selectedElement.fontFamily = this.value;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        document.getElementById('text-rotation').addEventListener('input', function() {
+            if (!selectedElement) return;
+            selectedElement.rotation = parseInt(this.value);
+            document.getElementById('rotation-value').textContent = `${this.value}°`;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        // Font selector
+        document.querySelectorAll('.font-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const font = this.dataset.font;
+                document.querySelectorAll('.font-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('font-family').value = font;
+                
+                if (selectedElement) {
+                    selectedElement.fontFamily = font;
+                    renderPlaceholdersOnCanvas();
+                }
+            });
+        });
+        
+        // Text format buttons
+        document.getElementById('bold-btn').addEventListener('click', function() {
+            if (!selectedElement) return;
+            selectedElement.bold = !selectedElement.bold;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        document.getElementById('italic-btn').addEventListener('click', function() {
+            if (!selectedElement) return;
+            selectedElement.italic = !selectedElement.italic;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        document.getElementById('underline-btn').addEventListener('click', function() {
+            if (!selectedElement) return;
+            selectedElement.underline = !selectedElement.underline;
+            renderPlaceholdersOnCanvas();
+        });
+        
+        // Text alignment buttons
+        const alignButtons = ['left', 'center', 'right'];
+        alignButtons.forEach(align => {
+            document.getElementById(`align-${align}-btn`).addEventListener('click', function() {
+                if (!selectedElement) return;
+                selectedElement.textAlign = align;
+                renderPlaceholdersOnCanvas();
+            });
+        });
+        
+        // Load template image
+        document.getElementById('upload-template-btn').addEventListener('click', () => {
+            document.getElementById('template-upload').click();
+        });
+        
+        document.getElementById('template-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                templateImage = event.target.result;
+                drawCanvas();
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Reset canvas
+        document.getElementById('reset-canvas-btn').addEventListener('click', () => {
+            placeholders = [];
+            templateImage = null;
+            canvas.width = 1000;
+            canvas.height = 700;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            renderPlaceholders();
+            updateTableHeaders();
+            document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
+        });
+        
+        // Table management
+        document.getElementById('add-row').addEventListener('click', () => {
+            dataTable.push({});
+            renderTableBody();
+        });
+        
+        // Import CSV
+        document.getElementById('import-csv').addEventListener('click', () => {
+            document.getElementById('csv-upload').click();
+        });
+        
+        document.getElementById('csv-upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const text = await file.text();
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            dataTable = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length === headers.length) {
+                    const row = {};
+                    headers.forEach((header, j) => {
+                        row[header] = values[j].trim();
+                    });
+                    dataTable.push(row);
+                }
+            }
+            
+            renderTableBody();
+        });
+        
+        // Export CSV
+        document.getElementById('export-csv').addEventListener('click', () => {
+            if (dataTable.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+            
+            let csvContent = '';
+            const headers = placeholders.map(ph => ph.name);
+            
+            // Header
+            csvContent += headers.join(',') + '\n';
+            
+            // Data
+            dataTable.forEach(row => {
+                const rowData = headers.map(header => row[header] || '');
+                csvContent += rowData.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            saveAs(blob, 'data_penerima.csv');
+        });
+        
+        // Fungsi untuk menggambar sertifikat di canvas
+        function drawCertificate(data) {
+            if (!templateImage) return;
+            
+            const img = new Image();
+            img.src = templateImage;
+            img.onload = () => {
+                // Set ukuran canvas sesuai template
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // Gambar template
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Gambar teks dengan data
+                placeholders.forEach(ph => {
+                    const value = data[ph.name] || '';
+                    ctx.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
+                    ctx.fillStyle = ph.color;
+                    
+                    // Perataan teks
+                    if (ph.textAlign === 'left') {
+                        ctx.textAlign = 'left';
+                    } else if (ph.textAlign === 'center') {
+                        ctx.textAlign = 'center';
+                    } else if (ph.textAlign === 'right') {
+                        ctx.textAlign = 'right';
+                    }
+                    
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(value, ph.x, ph.y);
+                });
+            };
+        }
+        
+        // Generate Preview
+        document.getElementById('preview-btn').addEventListener('click', async () => {
+            if (!dataTable[0] || !templateImage) {
+                alert('Silakan upload template gambar dan isi data terlebih dahulu!');
+                return;
+            }
+            
+            const previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = '<p>Membuat preview...</p>';
+            
+            try {
+                // Gambar sertifikat di canvas sementara
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Gambar template
+                const img = new Image();
+                img.src = templateImage;
+                await new Promise((resolve) => { img.onload = resolve; });
+                
+                tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Gambar teks dengan data pertama
+                placeholders.forEach(ph => {
+                    const value = dataTable[0][ph.name] || '';
+                    tempCtx.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
+                    tempCtx.fillStyle = ph.color;
+                    
+                    // Perataan teks yang benar
+                    if (ph.textAlign === 'left') {
+                        tempCtx.textAlign = 'left';
+                    } else if (ph.textAlign === 'center') {
+                        tempCtx.textAlign = 'center';
+                    } else if (ph.textAlign === 'right') {
+                        tempCtx.textAlign = 'right';
+                    }
+                    
+                    tempCtx.textBaseline = 'top';
+                    tempCtx.fillText(value, ph.x, ph.y);
+                });
+                
+                // Tampilkan preview
+                previewArea.innerHTML = `
+                    <h3>Preview Sertifikat</h3>
+                    <img src="${tempCanvas.toDataURL('image/png')}" alt="Preview Sertifikat">
+                    <p class="alert alert-info" style="margin-top: 15px;">
+                        <i class="fas fa-info-circle"></i> Ini adalah preview untuk baris data pertama.
+                    </p>
+                `;
+            } catch (error) {
+                console.error('Error generating preview:', error);
+                previewArea.innerHTML = `<p class="alert alert-info">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Generate All
+        document.getElementById('generate-btn').addEventListener('click', async () => {
+            if (!dataTable.length || !templateImage) {
+                alert('Silakan upload template gambar dan isi data terlebih dahulu!');
+                return;
+            }
+            
+            const loading = document.getElementById('loading');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('status-text');
+            loading.style.display = 'block';
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Mempersiapkan...';
+            
+            try {
+                const zip = new JSZip();
+                const { jsPDF } = window.jspdf;
+                
+                // Gambar template untuk referensi
+                const templateImg = new Image();
+                templateImg.src = templateImage;
+                await new Promise((resolve) => { templateImg.onload = resolve; });
+                
+                // Proses sertifikat satu per satu
+                for (let i = 0; i < dataTable.length; i++) {
+                    statusText.textContent = `Memproses sertifikat ${i+1} dari ${dataTable.length}...`;
+                    progressBar.style.width = `${((i+1) / dataTable.length) * 100}%`;
+                    
+                    // Buat PDF untuk sertifikat ini
+                    const doc = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'px',
+                        format: [templateImg.width, templateImg.height]
+                    });
+                    
+                    // Gambar template
+                    doc.addImage(templateImage, 'PNG', 0, 0, templateImg.width, templateImg.height);
+                    
+                    // Tambahkan teks
+                    placeholders.forEach(ph => {
+                        const value = dataTable[i][ph.name] || '';
+                        doc.setFont(ph.fontFamily);
+                        doc.setFontSize(ph.fontSize);
+                        
+                        // Konversi warna hex ke RGB
+                        const hex = ph.color.replace('#', '');
+                        const r = parseInt(hex.substring(0, 2), 16);
+                        const g = parseInt(hex.substring(2, 4), 16);
+                        const b = parseInt(hex.substring(4, 6), 16);
+                        
+                        doc.setTextColor(r, g, b);
+                        
+                        // Perataan teks
+                        if (ph.textAlign === 'center') {
+                            doc.text(value, templateImg.width / 2, ph.y, { align: 'center' });
+                        } else if (ph.textAlign === 'right') {
+                            doc.text(value, templateImg.width - ph.x, ph.y, { align: 'right' });
+                        } else {
+                            doc.text(value, ph.x, ph.y);
+                        }
+                    });
+                    
+                    // Simpan PDF ke ZIP
+                    const pdfData = doc.output('blob');
+                    zip.file(`sertifikat_${i+1}.pdf`, pdfData);
+                    
+                    // Berikan jeda agar UI tetap responsif
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                // Generate ZIP
+                statusText.textContent = 'Membuat file ZIP...';
+                const content = await zip.generateAsync({type: 'blob'});
+                
+                // Download ZIP
+                saveAs(content, 'sertifikat.zip');
+                
+                loading.style.display = 'none';
+            } catch (error) {
+                console.error('Error generating certificates:', error);
+                loading.style.display = 'none';
+                alert(`Terjadi kesalahan: ${error.message}`);
+            }
+        });
+        
+        // Save/Load Config
+        document.getElementById('save-config').addEventListener('click', () => {
+            if (placeholders.length === 0) {
+                alert('Tidak ada konfigurasi untuk disimpan!');
+                return;
+            }
+            
+            const config = {
+                template: templateImage,
+                placeholders: placeholders,
+                data: dataTable
+            };
+            
+            const dataStr = JSON.stringify(config);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            saveAs(blob, 'sertifikat_config.json');
+        });
+        
+        document.getElementById('load-config').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const config = JSON.parse(event.target.result);
+                        templateImage = config.template;
+                        placeholders = config.placeholders;
+                        dataTable = config.data || [];
+                        
+                        drawCanvas();
+                        renderPlaceholders();
+                        updateTableHeaders();
+                        renderTableBody();
+                        
+                        alert('Template berhasil dimuat!');
+                    } catch (error) {
+                        alert('Gagal memuat template: Format file tidak valid');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+        
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                btn.classList.add('active');
+                
+                // Hide all cards
+                document.querySelectorAll('.card').forEach(card => card.classList.remove('active'));
+                
+                // Show selected card
+                const tabId = btn.dataset.tab;
+                document.getElementById(`${tabId}-card`).classList.add('active');
+            });
+        });
+        
+        // Inisialisasi
+        function init() {
+            // Tambahkan data contoh
+            if (dataTable.length === 0) {
+                dataTable.push({
+                    NAMA: 'John Doe',
+                    TANGGAL: '12 Agustus 2025',
+                    PREDIKAT: 'Sangat Memuaskan'
+                });
+                renderTableBody();
+            }
+            
+            drawCanvas();
+        }
+        
+        init();
+    </script>
+</body>
+</html>
