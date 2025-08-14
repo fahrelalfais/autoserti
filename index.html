@@ -111,7 +111,7 @@
             margin: 20px 0;
             border: 1px solid var(--light-gray);
             border-radius: var(--border-radius);
-            overflow: auto;
+            overflow: auto; /* Dikembalikan ke auto untuk scroll */
             background: #f8fafc;
             box-shadow: var(--box-shadow);
             max-height: 70vh;
@@ -125,7 +125,9 @@
             border: 1px solid var(--light-gray);
             background: white;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-            max-width: 100%;
+            max-width: 100%; /* Tetap agar tidak melebihi lebar container */
+            height: auto; /* Penting: agar tinggi menyesuaikan lebar dan mempertahankan aspek rasio */
+            display: block; /* Menghilangkan ruang kosong di bawah canvas */
         }
 
         .placeholder-marker {
@@ -676,7 +678,7 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Upload gambar background sertifikat ukuran A4 landscape (2000x1414px)
+                    <i class="fas fa-info-circle"></i> Upload gambar background sertifikat. Canvas akan menyesuaikan ukurannya.
                 </div>
                 
                 <div class="btn-group">
@@ -688,14 +690,14 @@
                         <i class="fas fa-redo"></i> Reset
                     </button>
                     <button id="download-template" class="success">
-                        <i class="fas fa-download"></i> Unduh Template Kosong
+                        <i class="fas fa-download"></i> Unduh Template Kosong (A4 Landscape)
                     </button>
                 </div>
                 
                 <div class="canvas-container" id="canvas-container">
                     <canvas id="template-canvas" width="2000" height="1414"></canvas>
                 </div>
-                <p class="canvas-scaling-info">Canvas ditampilkan dalam skala 50% untuk kenyamanan pengeditan</p>
+                <p class="canvas-scaling-info" id="canvas-info-text">Canvas akan menyesuaikan ukuran gambar yang diunggah.</p>
                 
                 <div class="alert alert-info">
                     <i class="fas fa-mouse-pointer"></i> Placeholder dapat diatur pada tab Pengaturan Elemen
@@ -871,7 +873,6 @@
         let dataTable = [];
         let isDragging = false;
         let dragElement = null;
-        let startX, startY; // Ini akan menyimpan koordinat kanvas asli
         let selectedPlaceholderIndex = null;
         
         // Elemen canvas
@@ -880,8 +881,9 @@
         const container = document.getElementById('canvas-container'); // Container untuk canvas
         const previewOverlay = document.getElementById('preview-overlay');
         const previewImage = document.getElementById('preview-image');
-        
-        // Set ukuran A4 landscape (2000x1414px)
+        const canvasInfoText = document.getElementById('canvas-info-text');
+
+        // Default ukuran canvas (akan diubah saat gambar diunggah)
         canvas.width = 2000;
         canvas.height = 1414;
         
@@ -889,44 +891,45 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // ===== PERBAIKAN UTAMA: Fungsi konversi koordinat =====
-        // Konversi koordinat kanvas (2000x1414) ke koordinat layar (container)
+        // ===== FUNGSI KONVERSI KOORDINAT (TIDAK BERUBAH BANYAK) =====
+        // Konversi koordinat kanvas (ukuran asli gambar) ke koordinat layar (tampilan di browser)
         function canvasToScreen(canvasX, canvasY) {
-            const rect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
+            const canvasRect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
             const containerRect = container.getBoundingClientRect(); // Ukuran container canvas
             
-            // Hitung skala tampilan canvas
-            const scaleX = rect.width / canvas.width;
-            const scaleY = rect.height / canvas.height;
-            
-            // Hitung offset canvas di dalam container (karena ada padding dan justify-content: center)
-            const offsetX = rect.left - containerRect.left;
-            const offsetY = rect.top - containerRect.top;
+            // Hitung skala tampilan canvas relatif terhadap ukuran aslinya
+            const scaleX = canvasRect.width / canvas.width;
+            const scaleY = canvasRect.height / canvas.height;
+
+            // Hitung posisi marker relatif terhadap container, dengan memperhitungkan scroll
+            // Posisi marker harus relatif terhadap container, bukan posisi absolut di viewport
+            const markerX = (canvasRect.left - containerRect.left) + (canvasX * scaleX);
+            const markerY = (canvasRect.top - containerRect.top) + (canvasY * scaleY);
             
             return {
-                x: offsetX + canvasX * scaleX,
-                y: offsetY + canvasY * scaleY
+                x: markerX,
+                y: markerY
             };
         }
         
-        // Konversi koordinat layar (mouse) ke koordinat kanvas (2000x1414)
+        // Konversi koordinat layar (mouse) ke koordinat kanvas (ukuran asli gambar)
         function screenToCanvas(screenX, screenY) {
-            const rect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
+            const canvasRect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
             
             // Hitung skala terbalik
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
+            const scaleX = canvas.width / canvasRect.width;
+            const scaleY = canvas.height / canvasRect.height;
             
             // Hitung posisi relatif terhadap canvas yang ditampilkan
-            const relativeX = screenX - rect.left;
-            const relativeY = screenY - rect.top;
+            const relativeX = (screenX - canvasRect.left) * scaleX;
+            const relativeY = (screenY - canvasRect.top) * scaleY;
             
             return {
-                x: relativeX * scaleX,
-                y: relativeY * scaleY
+                x: relativeX,
+                y: relativeY
             };
         }
-        // ===== END PERBAIKAN UTAMA =====
+        // ===== END FUNGSI KONVERSI KOORDINAT =====
         
         // Fungsi untuk menggambar canvas
         function drawCanvas() {
@@ -941,23 +944,29 @@
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
+                // PERUBAHAN UTAMA DI SINI: Atur ukuran canvas sesuai gambar
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                
                 // Gambar template
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
+                // Update info teks
+                canvasInfoText.textContent = `Canvas: ${canvas.width}x${canvas.height}px. Gulir untuk melihat seluruh area.`;
+
                 // Gambar placeholder marker
                 renderPlaceholdersOnCanvas();
             };
             img.src = templateImage;
         }
         
-        // Fungsi untuk menampilkan placeholder di canvas (DIPERBAIKI)
+        // Fungsi untuk menampilkan placeholder di canvas
         function renderPlaceholdersOnCanvas() {
             // Hapus marker sebelumnya
             document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
             
             placeholders.forEach((ph, index) => {
-                // PERBAIKAN: Konversi koordinat canvas ke koordinat layar
                 const screenPos = canvasToScreen(ph.x, ph.y);
                 
                 const marker = document.createElement('div');
@@ -967,22 +976,17 @@
                 }
                 marker.textContent = `{${ph.name}}`;
                 
-                // Posisi marker di dalam container canvas
                 marker.style.left = `${screenPos.x}px`;
                 marker.style.top = `${screenPos.y}px`;
                 
-                // Ukuran font marker disesuaikan agar terlihat di editor
-                // Ini adalah ukuran font untuk marker, bukan ukuran font teks yang akan dicetak
-                marker.style.fontSize = `14px`; // Ukuran tetap agar marker mudah dilihat
+                marker.style.fontSize = `14px`; 
                 marker.style.color = ph.color;
                 marker.style.borderColor = ph.color;
                 marker.style.backgroundColor = `${ph.color}15`;
                 marker.dataset.index = index;
                 
-                // Tambahkan event untuk drag placeholder
                 marker.addEventListener('mousedown', startDrag);
                 
-                // Event untuk memilih placeholder
                 marker.addEventListener('click', (e) => {
                     e.stopPropagation();
                     selectPlaceholder(index);
@@ -997,7 +1001,6 @@
             selectedPlaceholderIndex = index;
             const ph = placeholders[index];
             
-            // Update tampilan daftar placeholder
             document.querySelectorAll('.placeholder-item').forEach((item, i) => {
                 if (i === index) {
                     item.classList.add('selected');
@@ -1006,10 +1009,8 @@
                 }
             });
             
-            // Update marker di canvas
             renderPlaceholdersOnCanvas();
             
-            // Update kontrol teks dengan data placeholder
             document.getElementById('text-content').value = ph.name;
             document.getElementById('font-size').value = ph.fontSize;
             document.getElementById('font-size-value').textContent = `${ph.fontSize}px`;
@@ -1019,18 +1020,15 @@
             document.getElementById('text-rotation').value = ph.rotation;
             document.getElementById('rotation-value').textContent = `${ph.rotation}°`;
             
-            // Update tombol gaya teks
             document.getElementById('bold-btn').classList.toggle('active', ph.bold);
             document.getElementById('italic-btn').classList.toggle('active', ph.italic);
             document.getElementById('underline-btn').classList.toggle('active', ph.underline);
             
-            // Update tombol perataan
             document.querySelectorAll('.text-format-buttons button').forEach(btn => {
                 btn.classList.remove('active');
             });
             document.getElementById(`align-${ph.textAlign}-btn`).classList.add('active');
             
-            // Update font selector
             document.querySelectorAll('.font-option').forEach(option => {
                 option.classList.remove('selected');
                 if (option.dataset.font === ph.fontFamily) {
@@ -1039,37 +1037,27 @@
             });
         }
         
-        // Fungsi untuk memulai drag placeholder (DIPERBAIKI)
+        // Fungsi untuk memulai drag placeholder
         function startDrag(e) {
             e.preventDefault();
             isDragging = true;
             dragElement = parseInt(e.target.dataset.index);
-            
-            // Simpan posisi awal dalam koordinat canvas
-            const ph = placeholders[dragElement];
-            
-            // Tidak perlu startX/Y lagi karena kita langsung update ph.x/ph.y
-            // Cukup simpan posisi mouse awal untuk perhitungan delta jika diperlukan,
-            // tapi dengan screenToCanvas, kita bisa langsung pakai posisi mouse saat ini.
             
             e.target.style.cursor = 'grabbing';
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
         }
         
-        // Fungsi untuk menggerakkan placeholder (DIPERBAIKI)
+        // Fungsi untuk menggerakkan placeholder
         function drag(e) {
             if (!isDragging) return;
             
-            // PERBAIKAN: Konversi posisi mouse ke koordinat canvas
             const canvasPos = screenToCanvas(e.clientX, e.clientY);
             
-            // Update posisi placeholder dalam koordinat canvas
             const ph = placeholders[dragElement];
             ph.x = Math.max(0, Math.min(canvas.width, canvasPos.x));
             ph.y = Math.max(0, Math.min(canvas.height, canvasPos.y));
             
-            // Render ulang marker
             renderPlaceholdersOnCanvas();
         }
         
@@ -1087,7 +1075,6 @@
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', stopDrag);
             
-            // Render ulang daftar placeholder untuk update posisi
             renderPlaceholders();
         }
         
@@ -1122,7 +1109,6 @@
             updateTableHeaders();
             renderPlaceholdersOnCanvas();
             
-            // Pilih placeholder baru
             selectPlaceholder(placeholders.length - 1);
         }
         
@@ -1195,11 +1181,10 @@
             const tbody = document.querySelector('#data-table tbody');
             tbody.innerHTML = '';
             
-            // Pastikan ada setidaknya satu baris data jika placeholder ada
             if (placeholders.length > 0 && dataTable.length === 0) {
                 dataTable.push({});
             } else if (placeholders.length === 0) {
-                dataTable = []; // Kosongkan dataTable jika tidak ada placeholder
+                dataTable = []; 
             }
             
             dataTable.forEach((row, rowIdx) => {
@@ -1214,7 +1199,6 @@
                     tr.appendChild(td);
                 });
                 
-                // Tambahkan tombol hapus
                 const tdAction = document.createElement('td');
                 const btnDelete = document.createElement('button');
                 btnDelete.innerHTML = '<i class="fas fa-trash"></i>';
@@ -1311,7 +1295,6 @@
                 const ph = placeholders[selectedPlaceholderIndex];
                 ph.textAlign = align;
                 
-                // Update active button
                 document.querySelectorAll('.text-format-buttons button').forEach(btn => {
                     btn.classList.remove('active');
                 });
@@ -1333,7 +1316,7 @@
             const reader = new FileReader();
             reader.onload = (event) => {
                 templateImage = event.target.result;
-                drawCanvas();
+                drawCanvas(); // Panggil drawCanvas untuk mengatur ukuran dan menggambar
                 updatePreviewBackground();
             };
             reader.readAsDataURL(file);
@@ -1351,15 +1334,20 @@
         
         // Reset canvas
         document.getElementById('reset-canvas-btn').addEventListener('click', () => {
-            if (confirm('Reset semua template? Semua placeholder akan dihapus.')) {
+            if (confirm('Reset semua template? Gambar dan semua placeholder akan dihapus.')) {
                 placeholders = [];
                 templateImage = null;
                 selectedPlaceholderIndex = null;
+                
+                // Reset canvas ke ukuran default A4 landscape
                 canvas.width = 2000;
                 canvas.height = 1414;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                canvasInfoText.textContent = `Canvas: ${canvas.width}x${canvas.height}px (ukuran default A4 Landscape).`;
+
                 renderPlaceholders();
                 updateTableHeaders();
                 document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
@@ -1389,7 +1377,7 @@
             
             const a = document.createElement('a');
             a.href = dataURL;
-            a.download = 'template_sertifikat_kosong.png';
+            a.download = 'template_sertifikat_kosong_A4_landscape.png';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1397,7 +1385,6 @@
         
         // Table management
         document.getElementById('add-row').addEventListener('click', () => {
-            // Hanya tambahkan baris jika ada placeholder yang ditentukan
             if (placeholders.length > 0) {
                 dataTable.push({});
                 renderTableBody();
@@ -1424,7 +1411,6 @@
 
             const headers = lines[0].split(',').map(h => h.trim());
             
-            // Validasi apakah header CSV cocok dengan placeholder yang ada
             const missingPlaceholders = placeholders.filter(ph => !headers.includes(ph.name));
             if (missingPlaceholders.length > 0) {
                 alert(`Peringatan: Placeholder berikut tidak ditemukan di file CSV: ${missingPlaceholders.map(ph => ph.name).join(', ')}. Pastikan nama kolom di CSV cocok dengan nama placeholder.`);
@@ -1455,13 +1441,10 @@
             let csvContent = '';
             const headers = placeholders.map(ph => ph.name);
             
-            // Header
             csvContent += headers.join(',') + '\n';
             
-            // Data
             dataTable.forEach(row => {
                 const rowData = headers.map(header => {
-                    // Pastikan nilai di-escape jika mengandung koma atau kutip
                     let value = row[header] || '';
                     if (value.includes(',') || value.includes('"') || value.includes('\n')) {
                         value = `"${value.replace(/"/g, '""')}"`;
@@ -1479,11 +1462,11 @@
         async function drawCertificate(data) {
             return new Promise((resolve) => {
                 const tempCanvas = document.createElement('canvas');
+                // Gunakan ukuran canvas yang saat ini aktif
                 tempCanvas.width = canvas.width;
                 tempCanvas.height = canvas.height;
                 const tempCtx = tempCanvas.getContext('2d');
                 
-                // Gambar background terlebih dahulu
                 if (templateImage) {
                     const img = new Image();
                     img.onload = () => {
@@ -1493,16 +1476,15 @@
                     };
                     img.onerror = () => {
                         console.error("Failed to load template image for drawing certificate.");
-                        // Fallback to white background if image fails to load
                         tempCtx.fillStyle = '#ffffff';
-                        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                        tempCtx.fillRect(0, 0, tempCanvas.width, tempCtx.height);
                         drawTextOnCanvas(tempCtx, data);
                         resolve(tempCanvas);
                     };
                     img.src = templateImage;
                 } else {
                     tempCtx.fillStyle = '#ffffff';
-                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCtx.height);
                     drawTextOnCanvas(tempCtx, data);
                     resolve(tempCanvas);
                 }
@@ -1514,20 +1496,15 @@
             placeholders.forEach(ph => {
                 const value = data[ph.name] || '';
                 
-                // Simpan state canvas
                 context.save();
                 
-                // Pindah ke titik rotasi
                 context.translate(ph.x, ph.y);
                 
-                // Terapkan rotasi
                 context.rotate(ph.rotation * Math.PI / 180);
                 
-                // Atur font
                 context.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
                 context.fillStyle = ph.color;
                 
-                // Perataan teks
                 if (ph.textAlign === 'left') {
                     context.textAlign = 'left';
                 } else if (ph.textAlign === 'center') {
@@ -1536,18 +1513,15 @@
                     context.textAlign = 'right';
                 }
                 
-                // Gunakan baseline 'middle' untuk konsistensi
                 context.textBaseline = 'middle';
                 
-                // Gambar teks
                 context.fillText(value, 0, 0);
                 
-                // Kembalikan state canvas
                 context.restore();
             });
         }
         
-        // Generate Preview dengan perbaikan
+        // Generate Preview
         document.getElementById('preview-btn').addEventListener('click', async () => {
             if (!dataTable.length || !placeholders.length) {
                 alert('Silakan isi data penerima dan atur placeholder terlebih dahulu!');
@@ -1558,13 +1532,17 @@
             previewArea.innerHTML = '<p>Membuat preview...</p>';
             
             try {
-                // Gambar sertifikat di canvas sementara
                 const tempCanvas = await drawCertificate(dataTable[0]);
                 
-                // Tampilkan preview
                 previewImage.src = tempCanvas.toDataURL('image/png');
                 
-                // Perbarui overlay preview
+                // PERUBAHAN: Atur ukuran preview container sesuai aspek rasio gambar yang diunggah
+                const aspectRatio = tempCanvas.width / tempCanvas.height;
+                const previewContainer = document.querySelector('.high-precision-preview');
+                // Asumsi lebar preview tetap 800px, sesuaikan tingginya
+                previewContainer.style.width = '800px';
+                previewContainer.style.height = `${800 / aspectRatio}px`;
+
                 updatePreviewOverlay(dataTable[0]);
                 
                 previewArea.innerHTML = `
@@ -1579,32 +1557,28 @@
             }
         });
         
-        // Fungsi untuk memperbarui overlay preview (DIPERBAIKI)
+        // Fungsi untuk memperbarui overlay preview
         function updatePreviewOverlay(data) {
-            // Hapus semua placeholder sebelumnya
             previewOverlay.innerHTML = '';
             
-            // PERBAIKAN: Hitung skala preview berdasarkan ukuran tampilan gambar preview
-            // dan ukuran asli kanvas
+            // PERUBAHAN: Skala preview berdasarkan ukuran tampilan gambar preview
+            // dan ukuran asli canvas (yang sekarang fleksibel)
             const scaleX = previewImage.clientWidth / canvas.width;
             const scaleY = previewImage.clientHeight / canvas.height;
             
-            // Tambahkan placeholder baru berdasarkan data
             placeholders.forEach(ph => {
                 const value = data[ph.name] || `{${ph.name}}`;
                 
                 const placeholder = document.createElement('div');
-                placeholder.className = 'preview-placeholder'; // Kelas ini sekarang tidak memiliki border/background
+                placeholder.className = 'preview-placeholder'; 
                 placeholder.textContent = value;
                 
-                // PERBAIKAN: Hitung posisi berdasarkan skala
                 const x = ph.x * scaleX;
                 const y = ph.y * scaleY;
                 
                 placeholder.style.left = `${x}px`;
                 placeholder.style.top = `${y}px`;
                 
-                // Skala ukuran font untuk overlay agar sesuai dengan preview
                 const fontSize = ph.fontSize * scaleX;
                 placeholder.style.fontSize = `${fontSize}px`;
                 placeholder.style.color = ph.color;
@@ -1613,7 +1587,6 @@
                 placeholder.style.fontStyle = ph.italic ? 'italic' : 'normal';
                 placeholder.style.textDecoration = ph.underline ? 'underline' : 'none';
                 
-                // Perataan teks untuk overlay (transform origin disesuaikan)
                 let transformOriginX = '50%';
                 if (ph.textAlign === 'left') {
                     placeholder.style.textAlign = 'left';
@@ -1621,14 +1594,13 @@
                 } else if (ph.textAlign === 'right') {
                     placeholder.style.textAlign = 'right';
                     transformOriginX = '100%';
-                } else { // center
+                } else { 
                     placeholder.style.textAlign = 'center';
                     transformOriginX = '50%';
                 }
                 
-                // Transformasi untuk posisi dan rotasi
                 placeholder.style.transform = `translate(-50%, -50%) rotate(${ph.rotation}deg)`;
-                placeholder.style.transformOrigin = `${transformOriginX} 50%`; // Sesuaikan origin rotasi
+                placeholder.style.transformOrigin = `${transformOriginX} 50%`; 
                 
                 previewOverlay.appendChild(placeholder);
             });
@@ -1636,12 +1608,12 @@
         
         // Fungsi untuk sanitasi nama file
         function sanitizeFilename(name) {
-            return name.replace(/[^a-zA-Z0-9_\u00C0-\u024F\s]/g, '') // Hapus karakter khusus
-                       .replace(/\s+/g, '_') // Ganti spasi dengan underscore
-                       .substring(0, 100); // Batasi panjang nama file
+            return name.replace(/[^a-zA-Z0-9_\u00C0-\u024F\s]/g, '') 
+                       .replace(/\s+/g, '_') 
+                       .substring(0, 100); 
         }
         
-        // Generate All dengan perbaikan
+        // Generate All
         document.getElementById('generate-btn').addEventListener('click', async () => {
             if (!dataTable.length || !placeholders.length) {
                 alert('Silakan isi data penerima dan atur placeholder terlebih dahulu!');
@@ -1659,46 +1631,37 @@
                 const zip = new JSZip();
                 const { jsPDF } = window.jspdf;
                 
-                // Proses sertifikat satu per satu
                 for (let i = 0; i < dataTable.length; i++) {
                     statusText.textContent = `Memproses sertifikat ${i+1} dari ${dataTable.length}...`;
                     progressBar.style.width = `${((i+1) / dataTable.length) * 100}%`;
                     
-                    // Buat canvas sementara untuk rendering
                     const tempCanvas = await drawCertificate(dataTable[i]);
                     
-                    // Buat PDF
-                    // Format A4 landscape dalam piksel (2000x1414)
+                    // PERUBAHAN: Format PDF menggunakan ukuran canvas yang fleksibel
                     const doc = new jsPDF({
                         unit: 'px',
                         format: [tempCanvas.width, tempCanvas.height],
-                        orientation: 'landscape' // Pastikan orientasi landscape
+                        orientation: tempCanvas.width > tempCanvas.height ? 'landscape' : 'portrait' // Tentukan orientasi berdasarkan dimensi gambar
                     });
                     
-                    // Tambahkan gambar sertifikat ke PDF
                     const imgData = tempCanvas.toDataURL('image/png');
                     doc.addImage(imgData, 'PNG', 0, 0, tempCanvas.width, tempCanvas.height);
                     
-                    // Tentukan nama file berdasarkan placeholder pertama
                     const firstPlaceholder = placeholders[0];
                     let fileName = `sertifikat_${i+1}`;
                     if (firstPlaceholder && dataTable[i][firstPlaceholder.name]) {
                         fileName = `Sertifikat_${sanitizeFilename(dataTable[i][firstPlaceholder.name])}`;
                     }
                     
-                    // Simpan PDF ke ZIP
                     const pdfData = doc.output('blob');
                     zip.file(`${fileName}.pdf`, pdfData);
                     
-                    // Berikan jeda agar UI tetap responsif
                     await new Promise(resolve => setTimeout(resolve, 50));
                 }
                 
-                // Generate ZIP
                 statusText.textContent = 'Membuat file ZIP...';
                 const content = await zip.generateAsync({type: 'blob'});
                 
-                // Download ZIP
                 saveAs(content, 'sertifikat.zip');
                 
                 loading.style.display = 'none';
@@ -1718,6 +1681,9 @@
             
             const config = {
                 template: templateImage,
+                // Simpan juga dimensi canvas saat ini agar bisa direstore
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
                 placeholders: placeholders,
                 data: dataTable
             };
@@ -1740,16 +1706,23 @@
                     try {
                         const config = JSON.parse(event.target.result);
                         templateImage = config.template;
-                        placeholders = config.placeholders || []; // Pastikan array kosong jika tidak ada
-                        dataTable = config.data || []; // Pastikan array kosong jika tidak ada
+                        placeholders = config.placeholders || []; 
+                        dataTable = config.data || []; 
                         selectedPlaceholderIndex = null;
                         
-                        drawCanvas();
+                        // PERUBAHAN: Restore ukuran canvas dari config
+                        canvas.width = config.canvasWidth || 2000; // Fallback ke A4 jika tidak ada
+                        canvas.height = config.canvasHeight || 1414; // Fallback ke A4 jika tidak ada
+                        
+                        drawCanvas(); // Ini akan menggambar ulang gambar dan placeholder
                         renderPlaceholders();
                         updateTableHeaders();
                         renderTableBody();
                         updatePreviewBackground();
                         
+                        // Update info teks canvas
+                        canvasInfoText.textContent = `Canvas: ${canvas.width}x${canvas.height}px. Gulir untuk melihat seluruh area.`;
+
                         alert('Template berhasil dimuat!');
                     } catch (error) {
                         alert('Gagal memuat template: Format file tidak valid atau rusak.');
@@ -1764,19 +1737,14 @@
         // Tab navigation
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                // Remove active class from all buttons
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
                 btn.classList.add('active');
                 
-                // Hide all cards
                 document.querySelectorAll('.card').forEach(card => card.classList.remove('active'));
                 
-                // Show selected card
                 const tabId = btn.dataset.tab;
                 document.getElementById(`${tabId}-card`).classList.add('active');
 
-                // Re-render placeholders on canvas when switching to template/elements tab
                 if (tabId === 'template' || tabId === 'elements') {
                     renderPlaceholdersOnCanvas();
                 }
@@ -1785,19 +1753,22 @@
         
         // Inisialisasi
         function init() {
-            // Canvas sudah diinisialisasi dengan background putih
+            // Set info teks awal
+            canvasInfoText.textContent = `Canvas: ${canvas.width}x${canvas.height}px (ukuran default A4 Landscape).`;
+
             renderPlaceholders();
             updateTableHeaders();
             updatePreviewBackground();
             
-            // PERBAIKAN: Tambahkan event listener untuk resize
-            // Ini penting agar posisi marker placeholder di editor tetap akurat saat ukuran jendela berubah
             window.addEventListener('resize', function() {
                 renderPlaceholdersOnCanvas();
-                // Juga perbarui overlay preview jika sedang ditampilkan
                 if (document.getElementById('generate-card').classList.contains('active') && dataTable.length > 0) {
                     updatePreviewOverlay(dataTable[0]);
                 }
+            });
+
+            container.addEventListener('scroll', function() {
+                renderPlaceholdersOnCanvas(); 
             });
         }
         
