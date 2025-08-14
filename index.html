@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Sertifikat Automatis Pro</title>
+    <title>Generator Sertifikat</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -118,6 +118,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         #template-canvas {
@@ -300,7 +301,7 @@
         }
 
         #preview-area img {
-            max-width: 90%;
+            max-width: 100%;
             border-radius: var(--border-radius);
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
             border: 1px solid var(--light-gray);
@@ -507,6 +508,76 @@
             color: white;
         }
 
+        .template-example {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .template-example img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+        }
+
+        /* Preview container style */
+        .preview-container {
+            position: relative;
+            width: 800px;
+            height: 566px;
+            margin: 20px auto;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .preview-placeholder {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            transform: translate(-50%, -50%);
+            padding: 4px 8px;
+            border-radius: 4px;
+            /* --- PERUBAHAN DI SINI --- */
+            background: transparent; /* Menghilangkan background */
+            border: none; /* Menghilangkan border */
+            /* --- AKHIR PERUBAHAN --- */
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* High precision preview */
+        .high-precision-preview {
+            position: relative;
+            width: 800px;
+            height: 566px;
+            margin: 20px auto;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        
+        .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: white;
+        }
+        
+        .preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
         @media (max-width: 1200px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -518,6 +589,13 @@
             
             .font-selector {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .preview-container, .high-precision-preview {
+                width: 100%;
+                height: 400px;
             }
         }
 
@@ -568,13 +646,20 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--primary-dark);
         }
+        
+        .canvas-scaling-info {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-certificate"></i> Generator Sertifikat Automatis Pro</h1>
-            <p>Solusi lengkap untuk membuat sertifikat secara massal dengan fleksibilitas tinggi dan performa optimal</p>
+            <h1><i class="fas fa-certificate"></i> Generator Sertifikat A4 Landscape Pro</h1>
+            <p>Solusi lengkap untuk membuat sertifikat ukuran A4 landscape (2000x1414px) secara massal dengan akurasi tinggi</p>
         </header>
         
         <div class="tabs">
@@ -591,7 +676,7 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Upload gambar background sertifikat (format PNG/JPG)
+                    <i class="fas fa-info-circle"></i> Upload gambar background sertifikat ukuran A4 landscape (2000x1414px)
                 </div>
                 
                 <div class="btn-group">
@@ -602,11 +687,15 @@
                     <button id="reset-canvas-btn" class="danger">
                         <i class="fas fa-redo"></i> Reset
                     </button>
+                    <button id="download-template" class="success">
+                        <i class="fas fa-download"></i> Unduh Template Kosong
+                    </button>
                 </div>
                 
                 <div class="canvas-container" id="canvas-container">
-                    <canvas id="template-canvas" width="1000" height="700"></canvas>
+                    <canvas id="template-canvas" width="2000" height="1414"></canvas>
                 </div>
+                <p class="canvas-scaling-info">Canvas ditampilkan dalam skala 50% untuk kenyamanan pengeditan</p>
                 
                 <div class="alert alert-info">
                     <i class="fas fa-mouse-pointer"></i> Placeholder dapat diatur pada tab Pengaturan Elemen
@@ -642,8 +731,8 @@
                     
                     <div class="text-control">
                         <label>Ukuran Font</label>
-                        <input type="range" id="font-size" min="8" max="120" value="30">
-                        <span id="font-size-value">30px</span>
+                        <input type="range" id="font-size" min="8" max="200" value="64">
+                        <span id="font-size-value">64px</span>
                     </div>
                     
                     <div class="text-control">
@@ -764,6 +853,12 @@
                     <div class="status-text" id="status-text">Memulai proses...</div>
                 </div>
                 
+                <!-- Preview area dengan akurasi tinggi -->
+                <div class="high-precision-preview">
+                    <img id="preview-image" class="preview-image" alt="Preview Sertifikat">
+                    <div class="preview-overlay" id="preview-overlay"></div>
+                </div>
+                
                 <div id="preview-area"></div>
             </div>
         </div>
@@ -776,25 +871,76 @@
         let dataTable = [];
         let isDragging = false;
         let dragElement = null;
-        let startX, startY;
+        let startX, startY; // Ini akan menyimpan koordinat kanvas asli
         let selectedPlaceholderIndex = null;
         
         // Elemen canvas
         const canvas = document.getElementById('template-canvas');
         const ctx = canvas.getContext('2d');
-        const container = document.getElementById('canvas-container');
+        const container = document.getElementById('canvas-container'); // Container untuk canvas
+        const previewOverlay = document.getElementById('preview-overlay');
+        const previewImage = document.getElementById('preview-image');
+        
+        // Set ukuran A4 landscape (2000x1414px)
+        canvas.width = 2000;
+        canvas.height = 1414;
+        
+        // Gambar background putih untuk A4 landscape
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // ===== PERBAIKAN UTAMA: Fungsi konversi koordinat =====
+        // Konversi koordinat kanvas (2000x1414) ke koordinat layar (container)
+        function canvasToScreen(canvasX, canvasY) {
+            const rect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
+            const containerRect = container.getBoundingClientRect(); // Ukuran container canvas
+            
+            // Hitung skala tampilan canvas
+            const scaleX = rect.width / canvas.width;
+            const scaleY = rect.height / canvas.height;
+            
+            // Hitung offset canvas di dalam container (karena ada padding dan justify-content: center)
+            const offsetX = rect.left - containerRect.left;
+            const offsetY = rect.top - containerRect.top;
+            
+            return {
+                x: offsetX + canvasX * scaleX,
+                y: offsetY + canvasY * scaleY
+            };
+        }
+        
+        // Konversi koordinat layar (mouse) ke koordinat kanvas (2000x1414)
+        function screenToCanvas(screenX, screenY) {
+            const rect = canvas.getBoundingClientRect(); // Ukuran tampilan canvas di layar
+            
+            // Hitung skala terbalik
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            // Hitung posisi relatif terhadap canvas yang ditampilkan
+            const relativeX = screenX - rect.left;
+            const relativeY = screenY - rect.top;
+            
+            return {
+                x: relativeX * scaleX,
+                y: relativeY * scaleY
+            };
+        }
+        // ===== END PERBAIKAN UTAMA =====
         
         // Fungsi untuk menggambar canvas
         function drawCanvas() {
-            if (!templateImage) return;
+            if (!templateImage) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                renderPlaceholdersOnCanvas();
+                return;
+            }
             
             const img = new Image();
-            img.src = templateImage;
+            img.crossOrigin = "anonymous";
             img.onload = () => {
-                // Atur ukuran canvas sesuai gambar
-                canvas.width = img.width;
-                canvas.height = img.height;
-                
                 // Gambar template
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -802,23 +948,32 @@
                 // Gambar placeholder marker
                 renderPlaceholdersOnCanvas();
             };
+            img.src = templateImage;
         }
         
-        // Fungsi untuk menampilkan placeholder di canvas
+        // Fungsi untuk menampilkan placeholder di canvas (DIPERBAIKI)
         function renderPlaceholdersOnCanvas() {
             // Hapus marker sebelumnya
             document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
             
             placeholders.forEach((ph, index) => {
+                // PERBAIKAN: Konversi koordinat canvas ke koordinat layar
+                const screenPos = canvasToScreen(ph.x, ph.y);
+                
                 const marker = document.createElement('div');
                 marker.className = 'placeholder-marker';
                 if (index === selectedPlaceholderIndex) {
                     marker.classList.add('selected');
                 }
                 marker.textContent = `{${ph.name}}`;
-                marker.style.left = `${ph.x}px`;
-                marker.style.top = `${ph.y}px`;
-                marker.style.fontSize = `${ph.fontSize}px`;
+                
+                // Posisi marker di dalam container canvas
+                marker.style.left = `${screenPos.x}px`;
+                marker.style.top = `${screenPos.y}px`;
+                
+                // Ukuran font marker disesuaikan agar terlihat di editor
+                // Ini adalah ukuran font untuk marker, bukan ukuran font teks yang akan dicetak
+                marker.style.fontSize = `14px`; // Ukuran tetap agar marker mudah dilihat
                 marker.style.color = ph.color;
                 marker.style.borderColor = ph.color;
                 marker.style.backgroundColor = `${ph.color}15`;
@@ -884,45 +1039,38 @@
             });
         }
         
-        // Fungsi untuk memulai drag placeholder
+        // Fungsi untuk memulai drag placeholder (DIPERBAIKI)
         function startDrag(e) {
             e.preventDefault();
             isDragging = true;
             dragElement = parseInt(e.target.dataset.index);
             
-            const marker = e.target;
-            const rect = marker.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
+            // Simpan posisi awal dalam koordinat canvas
+            const ph = placeholders[dragElement];
             
-            // Perhitungkan posisi relatif terhadap container
-            startX = e.clientX - rect.left + container.scrollLeft;
-            startY = e.clientY - rect.top + container.scrollTop;
+            // Tidak perlu startX/Y lagi karena kita langsung update ph.x/ph.y
+            // Cukup simpan posisi mouse awal untuk perhitungan delta jika diperlukan,
+            // tapi dengan screenToCanvas, kita bisa langsung pakai posisi mouse saat ini.
             
-            marker.style.cursor = 'grabbing';
+            e.target.style.cursor = 'grabbing';
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
         }
         
-        // Fungsi untuk menggerakkan placeholder
+        // Fungsi untuk menggerakkan placeholder (DIPERBAIKI)
         function drag(e) {
             if (!isDragging) return;
             
-            const marker = placeholders[dragElement];
-            const containerRect = container.getBoundingClientRect();
+            // PERBAIKAN: Konversi posisi mouse ke koordinat canvas
+            const canvasPos = screenToCanvas(e.clientX, e.clientY);
             
-            // Hitung posisi baru dengan memperhitungkan scroll container
-            const newX = e.clientX - containerRect.left + container.scrollLeft;
-            const newY = e.clientY - containerRect.top + container.scrollTop;
+            // Update posisi placeholder dalam koordinat canvas
+            const ph = placeholders[dragElement];
+            ph.x = Math.max(0, Math.min(canvas.width, canvasPos.x));
+            ph.y = Math.max(0, Math.min(canvas.height, canvasPos.y));
             
-            // Update posisi marker
-            marker.x = Math.max(0, Math.min(canvas.width, newX));
-            marker.y = Math.max(0, Math.min(canvas.height, newY));
-            
-            const markerElement = document.querySelector(`.placeholder-marker[data-index="${dragElement}"]`);
-            if (markerElement) {
-                markerElement.style.left = `${marker.x}px`;
-                markerElement.style.top = `${marker.y}px`;
-            }
+            // Render ulang marker
+            renderPlaceholdersOnCanvas();
         }
         
         // Fungsi untuk menghentikan drag
@@ -948,11 +1096,11 @@
             const name = prompt('Nama placeholder (e.g., NAMA):');
             if (!name) return;
             
-            // Tambahkan placeholder di tengah canvas
-            const x = canvas.width ? canvas.width / 2 : 500;
-            const y = canvas.height ? canvas.height / 2 : 350;
+            // Tambahkan placeholder di tengah canvas (koordinat canvas asli)
+            const x = canvas.width / 2;
+            const y = canvas.height / 2;
             
-            addPlaceholder(name, x, y, 30, '#000000');
+            addPlaceholder(name, x, y, 64, '#000000');
         });
         
         function addPlaceholder(name, x, y, fontSize, color) {
@@ -1002,11 +1150,11 @@
                     </div>
                     <div>
                         <label>Posisi X</label>
-                        <input type="number" value="${ph.x}" onchange="placeholders[${i}].x=parseInt(this.value); renderPlaceholdersOnCanvas();">
+                        <input type="number" value="${Math.round(ph.x)}" onchange="placeholders[${i}].x=parseInt(this.value); renderPlaceholdersOnCanvas();">
                     </div>
                     <div>
                         <label>Posisi Y</label>
-                        <input type="number" value="${ph.y}" onchange="placeholders[${i}].y=parseInt(this.value); renderPlaceholdersOnCanvas();">
+                        <input type="number" value="${Math.round(ph.y)}" onchange="placeholders[${i}].y=parseInt(this.value); renderPlaceholdersOnCanvas();">
                     </div>
                     <div>
                         <label>Ukuran Font</label>
@@ -1047,8 +1195,11 @@
             const tbody = document.querySelector('#data-table tbody');
             tbody.innerHTML = '';
             
-            if (dataTable.length === 0) {
+            // Pastikan ada setidaknya satu baris data jika placeholder ada
+            if (placeholders.length > 0 && dataTable.length === 0) {
                 dataTable.push({});
+            } else if (placeholders.length === 0) {
+                dataTable = []; // Kosongkan dataTable jika tidak ada placeholder
             }
             
             dataTable.forEach((row, rowIdx) => {
@@ -1183,9 +1334,20 @@
             reader.onload = (event) => {
                 templateImage = event.target.result;
                 drawCanvas();
+                updatePreviewBackground();
             };
             reader.readAsDataURL(file);
         });
+        
+        // Update background preview
+        function updatePreviewBackground() {
+            if (templateImage) {
+                previewImage.src = templateImage;
+            } else {
+                previewImage.src = '';
+                previewImage.style.backgroundColor = '#ffffff';
+            }
+        }
         
         // Reset canvas
         document.getElementById('reset-canvas-btn').addEventListener('click', () => {
@@ -1193,19 +1355,55 @@
                 placeholders = [];
                 templateImage = null;
                 selectedPlaceholderIndex = null;
-                canvas.width = 1000;
-                canvas.height = 700;
+                canvas.width = 2000;
+                canvas.height = 1414;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 renderPlaceholders();
                 updateTableHeaders();
                 document.querySelectorAll('.placeholder-marker').forEach(marker => marker.remove());
+                updatePreviewBackground();
             }
+        });
+        
+        // Unduh template kosong
+        document.getElementById('download-template').addEventListener('click', () => {
+            // Buat canvas kosong
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 2000;
+            tempCanvas.height = 1414;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Gambar background putih
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCtx.height);
+            
+            // Tambahkan border untuk menunjukkan area kerja
+            tempCtx.strokeStyle = '#4361ee';
+            tempCtx.lineWidth = 2;
+            tempCtx.strokeRect(50, 50, tempCanvas.width - 100, tempCanvas.height - 100);
+            
+            // Konversi ke data URL
+            const dataURL = tempCanvas.toDataURL('image/png');
+            
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = 'template_sertifikat_kosong.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         });
         
         // Table management
         document.getElementById('add-row').addEventListener('click', () => {
-            dataTable.push({});
-            renderTableBody();
+            // Hanya tambahkan baris jika ada placeholder yang ditentukan
+            if (placeholders.length > 0) {
+                dataTable.push({});
+                renderTableBody();
+            } else {
+                alert('Silakan tambahkan placeholder terlebih dahulu di tab "Pengaturan Elemen" sebelum menambahkan data penerima.');
+            }
         });
         
         // Import CSV
@@ -1219,8 +1417,19 @@
             
             const text = await file.text();
             const lines = text.split('\n');
+            if (lines.length <= 1) {
+                alert('File CSV kosong atau tidak memiliki data.');
+                return;
+            }
+
             const headers = lines[0].split(',').map(h => h.trim());
             
+            // Validasi apakah header CSV cocok dengan placeholder yang ada
+            const missingPlaceholders = placeholders.filter(ph => !headers.includes(ph.name));
+            if (missingPlaceholders.length > 0) {
+                alert(`Peringatan: Placeholder berikut tidak ditemukan di file CSV: ${missingPlaceholders.map(ph => ph.name).join(', ')}. Pastikan nama kolom di CSV cocok dengan nama placeholder.`);
+            }
+
             dataTable = [];
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',');
@@ -1238,8 +1447,8 @@
         
         // Export CSV
         document.getElementById('export-csv').addEventListener('click', () => {
-            if (dataTable.length === 0) {
-                alert('Tidak ada data untuk diexport!');
+            if (dataTable.length === 0 || placeholders.length === 0) {
+                alert('Tidak ada data atau placeholder untuk diexport!');
                 return;
             }
             
@@ -1251,7 +1460,14 @@
             
             // Data
             dataTable.forEach(row => {
-                const rowData = headers.map(header => row[header] || '');
+                const rowData = headers.map(header => {
+                    // Pastikan nilai di-escape jika mengandung koma atau kutip
+                    let value = row[header] || '';
+                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                        value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
                 csvContent += rowData.join(',') + '\n';
             });
             
@@ -1260,57 +1476,81 @@
         });
         
         // Fungsi untuk menggambar sertifikat di canvas
-        function drawCertificate(data) {
-            if (!templateImage) return;
-            
-            const img = new Image();
-            img.src = templateImage;
-            img.onload = () => {
-                // Set ukuran canvas sesuai template
-                canvas.width = img.width;
-                canvas.height = img.height;
+        async function drawCertificate(data) {
+            return new Promise((resolve) => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
                 
-                // Gambar template
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Gambar teks dengan data
-                placeholders.forEach(ph => {
-                    const value = data[ph.name] || '';
-                    
-                    // Simpan state canvas
-                    ctx.save();
-                    
-                    // Atur posisi rotasi
-                    ctx.translate(ph.x, ph.y);
-                    ctx.rotate(ph.rotation * Math.PI / 180);
-                    
-                    // Atur font
-                    ctx.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
-                    ctx.fillStyle = ph.color;
-                    
-                    // Perataan teks
-                    if (ph.textAlign === 'left') {
-                        ctx.textAlign = 'left';
-                    } else if (ph.textAlign === 'center') {
-                        ctx.textAlign = 'center';
-                    } else if (ph.textAlign === 'right') {
-                        ctx.textAlign = 'right';
-                    }
-                    
-                    ctx.textBaseline = 'top';
-                    ctx.fillText(value, 0, 0);
-                    
-                    // Kembalikan state canvas
-                    ctx.restore();
-                });
-            };
+                // Gambar background terlebih dahulu
+                if (templateImage) {
+                    const img = new Image();
+                    img.onload = () => {
+                        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                        drawTextOnCanvas(tempCtx, data);
+                        resolve(tempCanvas);
+                    };
+                    img.onerror = () => {
+                        console.error("Failed to load template image for drawing certificate.");
+                        // Fallback to white background if image fails to load
+                        tempCtx.fillStyle = '#ffffff';
+                        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                        drawTextOnCanvas(tempCtx, data);
+                        resolve(tempCanvas);
+                    };
+                    img.src = templateImage;
+                } else {
+                    tempCtx.fillStyle = '#ffffff';
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    drawTextOnCanvas(tempCtx, data);
+                    resolve(tempCanvas);
+                }
+            });
         }
         
-        // Generate Preview
+        // Fungsi untuk menggambar teks pada canvas
+        function drawTextOnCanvas(context, data) {
+            placeholders.forEach(ph => {
+                const value = data[ph.name] || '';
+                
+                // Simpan state canvas
+                context.save();
+                
+                // Pindah ke titik rotasi
+                context.translate(ph.x, ph.y);
+                
+                // Terapkan rotasi
+                context.rotate(ph.rotation * Math.PI / 180);
+                
+                // Atur font
+                context.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
+                context.fillStyle = ph.color;
+                
+                // Perataan teks
+                if (ph.textAlign === 'left') {
+                    context.textAlign = 'left';
+                } else if (ph.textAlign === 'center') {
+                    context.textAlign = 'center';
+                } else if (ph.textAlign === 'right') {
+                    context.textAlign = 'right';
+                }
+                
+                // Gunakan baseline 'middle' untuk konsistensi
+                context.textBaseline = 'middle';
+                
+                // Gambar teks
+                context.fillText(value, 0, 0);
+                
+                // Kembalikan state canvas
+                context.restore();
+            });
+        }
+        
+        // Generate Preview dengan perbaikan
         document.getElementById('preview-btn').addEventListener('click', async () => {
-            if (!dataTable[0] || !templateImage) {
-                alert('Silakan upload template gambar dan isi data terlebih dahulu!');
+            if (!dataTable.length || !placeholders.length) {
+                alert('Silakan isi data penerima dan atur placeholder terlebih dahulu!');
                 return;
             }
             
@@ -1319,54 +1559,18 @@
             
             try {
                 // Gambar sertifikat di canvas sementara
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                // Gambar template
-                const img = new Image();
-                img.src = templateImage;
-                await new Promise((resolve) => { img.onload = resolve; });
-                
-                tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // Gambar teks dengan data pertama
-                placeholders.forEach(ph => {
-                    const value = dataTable[0][ph.name] || '';
-                    
-                    // Simpan state canvas
-                    tempCtx.save();
-                    
-                    // Atur posisi rotasi
-                    tempCtx.translate(ph.x, ph.y);
-                    tempCtx.rotate(ph.rotation * Math.PI / 180);
-                    
-                    tempCtx.font = `${ph.bold ? 'bold ' : ''}${ph.italic ? 'italic ' : ''}${ph.fontSize}px ${ph.fontFamily}`;
-                    tempCtx.fillStyle = ph.color;
-                    
-                    // Perataan teks
-                    if (ph.textAlign === 'left') {
-                        tempCtx.textAlign = 'left';
-                    } else if (ph.textAlign === 'center') {
-                        tempCtx.textAlign = 'center';
-                    } else if (ph.textAlign === 'right') {
-                        tempCtx.textAlign = 'right';
-                    }
-                    
-                    tempCtx.textBaseline = 'top';
-                    tempCtx.fillText(value, 0, 0);
-                    
-                    // Kembalikan state canvas
-                    tempCtx.restore();
-                });
+                const tempCanvas = await drawCertificate(dataTable[0]);
                 
                 // Tampilkan preview
+                previewImage.src = tempCanvas.toDataURL('image/png');
+                
+                // Perbarui overlay preview
+                updatePreviewOverlay(dataTable[0]);
+                
                 previewArea.innerHTML = `
                     <h3>Preview Sertifikat</h3>
-                    <img src="${tempCanvas.toDataURL('image/png')}" alt="Preview Sertifikat">
                     <p class="alert alert-info" style="margin-top: 15px;">
-                        <i class="fas fa-info-circle"></i> Ini adalah preview untuk baris data pertama.
+                        <i class="fas fa-info-circle"></i> Posisi dan ukuran teks akan muncul tepat seperti yang diatur di editor.
                     </p>
                 `;
             } catch (error) {
@@ -1375,6 +1579,61 @@
             }
         });
         
+        // Fungsi untuk memperbarui overlay preview (DIPERBAIKI)
+        function updatePreviewOverlay(data) {
+            // Hapus semua placeholder sebelumnya
+            previewOverlay.innerHTML = '';
+            
+            // PERBAIKAN: Hitung skala preview berdasarkan ukuran tampilan gambar preview
+            // dan ukuran asli kanvas
+            const scaleX = previewImage.clientWidth / canvas.width;
+            const scaleY = previewImage.clientHeight / canvas.height;
+            
+            // Tambahkan placeholder baru berdasarkan data
+            placeholders.forEach(ph => {
+                const value = data[ph.name] || `{${ph.name}}`;
+                
+                const placeholder = document.createElement('div');
+                placeholder.className = 'preview-placeholder'; // Kelas ini sekarang tidak memiliki border/background
+                placeholder.textContent = value;
+                
+                // PERBAIKAN: Hitung posisi berdasarkan skala
+                const x = ph.x * scaleX;
+                const y = ph.y * scaleY;
+                
+                placeholder.style.left = `${x}px`;
+                placeholder.style.top = `${y}px`;
+                
+                // Skala ukuran font untuk overlay agar sesuai dengan preview
+                const fontSize = ph.fontSize * scaleX;
+                placeholder.style.fontSize = `${fontSize}px`;
+                placeholder.style.color = ph.color;
+                placeholder.style.fontFamily = ph.fontFamily;
+                placeholder.style.fontWeight = ph.bold ? 'bold' : 'normal';
+                placeholder.style.fontStyle = ph.italic ? 'italic' : 'normal';
+                placeholder.style.textDecoration = ph.underline ? 'underline' : 'none';
+                
+                // Perataan teks untuk overlay (transform origin disesuaikan)
+                let transformOriginX = '50%';
+                if (ph.textAlign === 'left') {
+                    placeholder.style.textAlign = 'left';
+                    transformOriginX = '0%';
+                } else if (ph.textAlign === 'right') {
+                    placeholder.style.textAlign = 'right';
+                    transformOriginX = '100%';
+                } else { // center
+                    placeholder.style.textAlign = 'center';
+                    transformOriginX = '50%';
+                }
+                
+                // Transformasi untuk posisi dan rotasi
+                placeholder.style.transform = `translate(-50%, -50%) rotate(${ph.rotation}deg)`;
+                placeholder.style.transformOrigin = `${transformOriginX} 50%`; // Sesuaikan origin rotasi
+                
+                previewOverlay.appendChild(placeholder);
+            });
+        }
+        
         // Fungsi untuk sanitasi nama file
         function sanitizeFilename(name) {
             return name.replace(/[^a-zA-Z0-9_\u00C0-\u024F\s]/g, '') // Hapus karakter khusus
@@ -1382,10 +1641,10 @@
                        .substring(0, 100); // Batasi panjang nama file
         }
         
-        // Generate All
+        // Generate All dengan perbaikan
         document.getElementById('generate-btn').addEventListener('click', async () => {
-            if (!dataTable.length || !templateImage) {
-                alert('Silakan upload template gambar dan isi data terlebih dahulu!');
+            if (!dataTable.length || !placeholders.length) {
+                alert('Silakan isi data penerima dan atur placeholder terlebih dahulu!');
                 return;
             }
             
@@ -1400,48 +1659,25 @@
                 const zip = new JSZip();
                 const { jsPDF } = window.jspdf;
                 
-                // Gambar template untuk referensi
-                const templateImg = new Image();
-                templateImg.src = templateImage;
-                await new Promise((resolve) => { templateImg.onload = resolve; });
-                
                 // Proses sertifikat satu per satu
                 for (let i = 0; i < dataTable.length; i++) {
                     statusText.textContent = `Memproses sertifikat ${i+1} dari ${dataTable.length}...`;
                     progressBar.style.width = `${((i+1) / dataTable.length) * 100}%`;
                     
-                    // Buat PDF untuk sertifikat ini
+                    // Buat canvas sementara untuk rendering
+                    const tempCanvas = await drawCertificate(dataTable[i]);
+                    
+                    // Buat PDF
+                    // Format A4 landscape dalam piksel (2000x1414)
                     const doc = new jsPDF({
-                        orientation: 'landscape',
                         unit: 'px',
-                        format: [templateImg.width, templateImg.height]
+                        format: [tempCanvas.width, tempCanvas.height],
+                        orientation: 'landscape' // Pastikan orientasi landscape
                     });
                     
-                    // Gambar template
-                    doc.addImage(templateImage, 'PNG', 0, 0, templateImg.width, templateImg.height);
-                    
-                    // Tambahkan teks dengan perataan yang benar
-                    placeholders.forEach(ph => {
-                        const value = dataTable[i][ph.name] || '';
-                        doc.setFont(ph.fontFamily);
-                        doc.setFontSize(ph.fontSize);
-                        
-                        // Konversi warna hex ke RGB
-                        const hex = ph.color.replace('#', '');
-                        const r = parseInt(hex.substring(0, 2), 16);
-                        const g = parseInt(hex.substring(2, 4), 16);
-                        const b = parseInt(hex.substring(4, 6), 16);
-                        
-                        doc.setTextColor(r, g, b);
-                        
-                        // Opsi perataan teks
-                        const options = {
-                            align: ph.textAlign
-                        };
-                        
-                        // Gunakan posisi yang sama dengan preview
-                        doc.text(value, ph.x, ph.y, options);
-                    });
+                    // Tambahkan gambar sertifikat ke PDF
+                    const imgData = tempCanvas.toDataURL('image/png');
+                    doc.addImage(imgData, 'PNG', 0, 0, tempCanvas.width, tempCanvas.height);
                     
                     // Tentukan nama file berdasarkan placeholder pertama
                     const firstPlaceholder = placeholders[0];
@@ -1475,7 +1711,7 @@
         
         // Save/Load Config
         document.getElementById('save-config').addEventListener('click', () => {
-            if (placeholders.length === 0) {
+            if (placeholders.length === 0 && !templateImage) {
                 alert('Tidak ada konfigurasi untuk disimpan!');
                 return;
             }
@@ -1504,18 +1740,20 @@
                     try {
                         const config = JSON.parse(event.target.result);
                         templateImage = config.template;
-                        placeholders = config.placeholders;
-                        dataTable = config.data || [];
+                        placeholders = config.placeholders || []; // Pastikan array kosong jika tidak ada
+                        dataTable = config.data || []; // Pastikan array kosong jika tidak ada
                         selectedPlaceholderIndex = null;
                         
                         drawCanvas();
                         renderPlaceholders();
                         updateTableHeaders();
                         renderTableBody();
+                        updatePreviewBackground();
                         
                         alert('Template berhasil dimuat!');
                     } catch (error) {
-                        alert('Gagal memuat template: Format file tidak valid');
+                        alert('Gagal memuat template: Format file tidak valid atau rusak.');
+                        console.error('Error loading config:', error);
                     }
                 };
                 reader.readAsText(file);
@@ -1537,22 +1775,30 @@
                 // Show selected card
                 const tabId = btn.dataset.tab;
                 document.getElementById(`${tabId}-card`).classList.add('active');
+
+                // Re-render placeholders on canvas when switching to template/elements tab
+                if (tabId === 'template' || tabId === 'elements') {
+                    renderPlaceholdersOnCanvas();
+                }
             });
         });
         
         // Inisialisasi
         function init() {
-            // Tambahkan data contoh
-            if (dataTable.length === 0) {
-                dataTable.push({
-                    NAMA: 'John Doe',
-                    TANGGAL: '12 Agustus 2025',
-                    PREDIKAT: 'Sangat Memuaskan'
-                });
-                renderTableBody();
-            }
+            // Canvas sudah diinisialisasi dengan background putih
+            renderPlaceholders();
+            updateTableHeaders();
+            updatePreviewBackground();
             
-            drawCanvas();
+            // PERBAIKAN: Tambahkan event listener untuk resize
+            // Ini penting agar posisi marker placeholder di editor tetap akurat saat ukuran jendela berubah
+            window.addEventListener('resize', function() {
+                renderPlaceholdersOnCanvas();
+                // Juga perbarui overlay preview jika sedang ditampilkan
+                if (document.getElementById('generate-card').classList.contains('active') && dataTable.length > 0) {
+                    updatePreviewOverlay(dataTable[0]);
+                }
+            });
         }
         
         init();
